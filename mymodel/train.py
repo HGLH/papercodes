@@ -211,14 +211,17 @@ for epoch in range(opt.epoch, opt.n_epochs):
                 time_left,
             )
         )
+    if opt.checkpoint_interval != -1 and epoch % opt.checkpoint_interval == 0:
+        # Save model checkpoints
+        torch.save(generator.state_dict(), "saved_models/%s/generator_%d.pth" % (opt.dataset_name, epoch))
+        torch.save(discriminator_s.state_dict(),
+                    "saved_models/%s/discriminators_%d.pth" % (opt.dataset_name, epoch))
+        torch.save(discriminator_c.state_dict(),
+                    "saved_models/%s/discriminatorc_%d.pth" % (opt.dataset_name, epoch))
 '''
         # If at sample interval save image
         if batches_done % opt.sample_interval == 0:
             sample_images(batches_done)
 
-    if opt.checkpoint_interval != -1 and epoch % opt.checkpoint_interval == 0:
-        # Save model checkpoints
-        torch.save(generator.state_dict(), "saved_models/%s/generator_%d.pth" % (opt.dataset_name, epoch))
-        torch.save(discriminator_s.state_dict(), "saved_models/%s/discriminators_%d.pth" % (opt.dataset_name, epoch))
-        torch.save(discriminator_c.state_dict(), "saved_models/%s/discriminatorc_%d.pth" % (opt.dataset_name, epoch))
+    
 '''
