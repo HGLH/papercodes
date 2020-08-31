@@ -67,9 +67,10 @@ if cuda:
 
 if opt.epoch != 0:
     # Load pretrained models
+    print("加载pre_trained模型")
     generator.load_state_dict(torch.load("saved_models/%s/generator_%d.pth" % (opt.dataset_name, opt.epoch)))
-    discriminator_s.load_state_dict(torch.load("saved_models/%s/discriminator_s_%d.pth" % (opt.dataset_name, opt.epoch)))
-    discriminator_c.load_state_dict(torch.load("saved_models/%s/discriminator_c_%d.pth" % (opt.dataset_name, opt.epoch)))
+    discriminator_s.load_state_dict(torch.load("saved_models/%s/discriminators_%d.pth" % (opt.dataset_name, opt.epoch)))
+    discriminator_c.load_state_dict(torch.load("saved_models/%s/discriminatorc_%d.pth" % (opt.dataset_name, opt.epoch)))
 else:
     # Initialize weights
     generator.apply(weights_init_normal)
@@ -110,9 +111,8 @@ def sample_images(batches_done):
     """Saves a generated sample from the validation set"""
     imgs = next(iter(val_dataloader))
     real_A = Variable(imgs["A"].type(Tensor))
-    real_B = Variable(imgs["B"].type(Tensor))
     fake_B = generator(real_A)
-    img_sample = torch.cat((real_A.data, fake_B.data, real_B.data), -2)
+    img_sample = torch.cat((real_A.data, fake_B.data), -2)
     save_image(img_sample, "images/%s/%s.png" % (opt.dataset_name, batches_done), nrow=5, normalize=True)
 
 
@@ -211,6 +211,9 @@ for epoch in range(opt.epoch, opt.n_epochs):
                 time_left,
             )
         )
+        # If at sample interval save image
+        if batches_done % opt.sample_interval == 0:
+            sample_images(batches_done)
     if opt.checkpoint_interval != -1 and epoch % opt.checkpoint_interval == 0:
         # Save model checkpoints
         torch.save(generator.state_dict(), "saved_models/%s/generator_%d.pth" % (opt.dataset_name, epoch))
@@ -218,10 +221,6 @@ for epoch in range(opt.epoch, opt.n_epochs):
                     "saved_models/%s/discriminators_%d.pth" % (opt.dataset_name, epoch))
         torch.save(discriminator_c.state_dict(),
                     "saved_models/%s/discriminatorc_%d.pth" % (opt.dataset_name, epoch))
-'''
-        # If at sample interval save image
-        if batches_done % opt.sample_interval == 0:
-            sample_images(batches_done)
 
-    
-'''
+
+
