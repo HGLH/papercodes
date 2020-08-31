@@ -223,4 +223,4 @@ for epoch in range(opt.epoch, opt.n_epochs):
                     "saved_models/%s/discriminatorc_%d.pth" % (opt.dataset_name, epoch))
 
 
-
+#[Epoch 48/200] [Batch 921/1334] [Ds loss: 0.095980] [Dc loss: 0.000278][G loss: 1.156492] ETA: 3:09:01.304492.4931431
