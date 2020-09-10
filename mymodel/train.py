@@ -17,6 +17,7 @@ from torch.autograd import Variable
 
 from model import *
 from datasets import *
+from tensorboardX import SummaryWriter
 
 import torch.nn as nn
 import torch.nn.functional as F
@@ -35,7 +36,7 @@ parser.add_argument("--n_cpu", type=int, default=2, help="number of cpu threads 
 parser.add_argument("--img_height", type=int, default=256, help="size of image height")
 parser.add_argument("--img_width", type=int, default=256, help="size of image width")
 parser.add_argument("--channels", type=int, default=3, help="number of image channels")
-parser.add_argument("--sample_interval", type=int, default=500, help="interval between sampling of images from generators")
+parser.add_argument("--sample_interval", type=int, default=100, help="interval between sampling of images from generators")
 parser.add_argument("--checkpoint_interval", type=int, default=-1, help="interval between model checkpoints")
 opt = parser.parse_args()
 print(opt)
@@ -121,7 +122,7 @@ def sample_images(batches_done):
 # ----------
 
 prev_time = time.time()
-
+writer = SummaryWriter('log')
 for epoch in range(opt.epoch, opt.n_epochs):
     for i, batch in enumerate(dataloader):
 
@@ -140,7 +141,7 @@ for epoch in range(opt.epoch, opt.n_epochs):
         # GAN loss
         fake_B = generator(real_A)
         pred_sfake = discriminator_s(fake_B)
-        pred_cfake=discriminator_s(real_B)
+        pred_cfake=discriminator_c(real_A,fake_B)
 
         loss_GAN1 = criterion_GAN(pred_sfake, valid)
         loss_GAN2 = criterion_GAN(pred_cfake,valid)
@@ -176,14 +177,17 @@ for epoch in range(opt.epoch, opt.n_epochs):
 
         # Real loss
         pred_creal = discriminator_c(real_A, fake_B)
-        loss_creal = criterion_GAN(pred_creal, valid)
+        loss_creal_A = criterion_GAN(pred_creal, valid)
+
+        pred_cfake=discriminator_c(real_B,real_B)
+        loss_creal_B = criterion_GAN(pred_creal, valid)
 
         # Fake loss
         pred_cfake = discriminator_c(real_A,real_B)
         loss_cfake = criterion_GAN(pred_cfake, fake)
 
         # Total loss
-        loss_DC = 0.5 * (loss_creal + loss_cfake)
+        loss_DC = 0.5 * (loss_creal_A+ loss_creal_B+loss_cfake)
 
         loss_DC.backward()
         optimizer_DC.step()
@@ -196,6 +200,10 @@ for epoch in range(opt.epoch, opt.n_epochs):
         batches_left = opt.n_epochs * len(dataloader) - batches_done
         time_left = datetime.timedelta(seconds=batches_left * (time.time() - prev_time))
         prev_time = time.time()
+
+        writer.add_scalar('loss_G', loss_G, global_step=batches_done)
+        writer.add_scalar('loss_DS', loss_DS, global_step=batches_done)
+        writer.add_scalar('loss_DC', loss_DC, global_step=batches_done)
 
         # Print log
         sys.stdout.write(
@@ -224,3 +232,4 @@ for epoch in range(opt.epoch, opt.n_epochs):
 
 
 #[Epoch 48/200] [Batch 921/1334] [Ds loss: 0.095980] [Dc loss: 0.000278][G loss: 1.156492] ETA: 3:09:01.304492.4931431
+#python train.py --dataset horse2zebra --batch_size 8 --checkpoint_interval 8
